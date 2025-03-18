@@ -184,13 +184,36 @@ export default function QuickActions() {
           <DialogHeader>
             <DialogTitle>Create Credit Entry</DialogTitle>
           </DialogHeader>
-          {selectedParty && (
-            <TransactionForm 
-              partyId={selectedParty}
-              type="CREDIT"
-              onSubmit={(data) => createTransactionMutation.mutate(data)}
-              isSubmitting={createTransactionMutation.isPending}
-            />
+          {parties && parties.length > 0 ? (
+            <>
+              <div className="py-4">
+                <label className="block text-sm font-medium mb-2">Select Party</label>
+                <select 
+                  className="w-full p-2 border rounded-md" 
+                  value={selectedParty || ""}
+                  onChange={(e) => setSelectedParty(parseInt(e.target.value))}
+                >
+                  <option value="" disabled>Select a party</option>
+                  {parties.map((party) => (
+                    <option key={party.id} value={party.id}>
+                      {party.name} {party.gstin ? `(${party.gstin})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedParty && (
+                <TransactionForm 
+                  partyId={selectedParty}
+                  type="CREDIT"
+                  onSubmit={(data) => createTransactionMutation.mutate(data)}
+                  isSubmitting={createTransactionMutation.isPending}
+                />
+              )}
+            </>
+          ) : (
+            <div className="py-6 text-center text-gray-500">
+              Please add a party first before creating a transaction.
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -201,13 +224,36 @@ export default function QuickActions() {
           <DialogHeader>
             <DialogTitle>Record Deposit</DialogTitle>
           </DialogHeader>
-          {selectedParty && (
-            <TransactionForm 
-              partyId={selectedParty}
-              type="DEPOSIT"
-              onSubmit={(data) => createTransactionMutation.mutate(data)}
-              isSubmitting={createTransactionMutation.isPending}
-            />
+          {parties && parties.length > 0 ? (
+            <>
+              <div className="py-4">
+                <label className="block text-sm font-medium mb-2">Select Party</label>
+                <select 
+                  className="w-full p-2 border rounded-md" 
+                  value={selectedParty || ""}
+                  onChange={(e) => setSelectedParty(parseInt(e.target.value))}
+                >
+                  <option value="" disabled>Select a party</option>
+                  {parties.map((party) => (
+                    <option key={party.id} value={party.id}>
+                      {party.name} {party.gstin ? `(${party.gstin})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedParty && (
+                <TransactionForm 
+                  partyId={selectedParty}
+                  type="DEPOSIT"
+                  onSubmit={(data) => createTransactionMutation.mutate(data)}
+                  isSubmitting={createTransactionMutation.isPending}
+                />
+              )}
+            </>
+          ) : (
+            <div className="py-6 text-center text-gray-500">
+              Please add a party first before creating a transaction.
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -218,14 +264,37 @@ export default function QuickActions() {
           <DialogHeader>
             <DialogTitle>Upload Bill</DialogTitle>
           </DialogHeader>
-          {selectedParty && (
-            <BillUpload
-              partyId={selectedParty}
-              transactionId={null}
-              transactions={creditTransactions || []}
-              onSubmit={(formData) => uploadBillMutation.mutate(formData)}
-              isSubmitting={uploadBillMutation.isPending}
-            />
+          {parties && parties.length > 0 ? (
+            <>
+              <div className="py-4">
+                <label className="block text-sm font-medium mb-2">Select Party</label>
+                <select 
+                  className="w-full p-2 border rounded-md" 
+                  value={selectedParty || ""}
+                  onChange={(e) => setSelectedParty(parseInt(e.target.value))}
+                >
+                  <option value="" disabled>Select a party</option>
+                  {parties.map((party) => (
+                    <option key={party.id} value={party.id}>
+                      {party.name} {party.gstin ? `(${party.gstin})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedParty && (
+                <BillUpload
+                  partyId={selectedParty}
+                  transactionId={null}
+                  transactions={creditTransactions || []}
+                  onSubmit={(formData) => uploadBillMutation.mutate(formData)}
+                  isSubmitting={uploadBillMutation.isPending}
+                />
+              )}
+            </>
+          ) : (
+            <div className="py-6 text-center text-gray-500">
+              Please add a party first before uploading a bill.
+            </div>
           )}
         </DialogContent>
       </Dialog>

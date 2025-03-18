@@ -184,14 +184,10 @@ export default function RecentActivity({ transactions, isLoading }: RecentActivi
               {transactionType === "CREDIT" ? "Add Credit Entry" : "Record Deposit"}
             </DialogTitle>
           </DialogHeader>
-          {selectedPartyId && (
-            <TransactionForm 
-              partyId={selectedPartyId} 
-              type={transactionType}
-              onSubmit={(data) => createTransactionMutation.mutate(data)}
-              isSubmitting={createTransactionMutation.isPending}
-            />
-          )}
+          {/* We need to fetch parties here */}
+          <div className="py-4 text-center text-gray-500">
+            Please use the Quick Actions panel to create transactions.
+          </div>
         </DialogContent>
       </Dialog>
     </>
