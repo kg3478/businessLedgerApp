@@ -38,8 +38,8 @@ import { Party, Transaction, Bill, TransactionType, CreateTransaction } from "@s
 
 export default function PartyDetailsPage() {
   const [_, navigate] = useLocation();
-  const [match] = useRoute<{ id: string }>("/parties/:id");
-  const partyId = match?.params.id ? parseInt(match.params.id) : null;
+  const [match, params] = useRoute<{ id: string }>("/parties/:id");
+  const partyId = params?.id ? parseInt(params.id) : null;
   
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isUploadBillOpen, setIsUploadBillOpen] = useState(false);
