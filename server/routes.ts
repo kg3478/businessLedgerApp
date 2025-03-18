@@ -158,7 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new transaction
   app.post("/api/transactions", isAuthenticated, async (req, res) => {
     try {
-      const validatedData = insertTransactionSchema.parse(req.body);
+      // Ensure date is properly converted to Date object before validation
+      let transactionData = req.body;
+      if (typeof transactionData.date === 'string') {
+        transactionData = {
+          ...transactionData,
+          date: new Date(transactionData.date)
+        };
+      }
+      
+      const validatedData = insertTransactionSchema.parse(transactionData);
       
       // Verify party exists
       const party = await storage.getParty(validatedData.partyId);

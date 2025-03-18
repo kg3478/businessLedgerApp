@@ -64,7 +64,13 @@ export default function TransactionForm({
   });
 
   const handleSubmit = (data: TransactionFormValues) => {
-    onSubmit(data);
+    // Ensure date is properly formatted as a Date object
+    // This ensures we're sending a proper Date object, not a string
+    const formattedData = {
+      ...data,
+      date: new Date(data.date),
+    };
+    onSubmit(formattedData);
   };
 
   return (
