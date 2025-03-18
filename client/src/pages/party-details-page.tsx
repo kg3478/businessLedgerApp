@@ -50,13 +50,20 @@ export default function PartyDetailsPage() {
 
   const { data: party, isLoading: isLoadingParty } = useQuery<Party>({
     queryKey: ["/api/parties", partyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to fetch party details");
+      return res.json();
+    },
     enabled: !!partyId,
   });
 
   const { data: transactions, isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+    queryKey: ["/api/transactions", partyId],
     queryFn: async () => {
-      const res = await fetch(`/api/transactions?partyId=${partyId}`, {
+      const res = await fetch(`/api/transactions/${partyId}`, {
         credentials: "include"
       });
       if (!res.ok) throw new Error("Failed to fetch transactions");
@@ -510,16 +517,16 @@ export default function PartyDetailsPage() {
                 </div>
               )}
 
-              {!isLoadingBills && bills?.length === 0 && (
+              {!isLoadingBills && (!bills || bills.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
                   <FileText className="h-12 w-12 mx-auto mb-2 text-gray-400" />
                   <p>No bills uploaded for this party yet</p>
                 </div>
               )}
 
-              {!isLoadingBills && bills?.length > 0 && (
+              {!isLoadingBills && bills && bills.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {bills.map(bill => (
+                  {Array.isArray(bills) && bills.map(bill => (
                     <div key={bill.id} className="border rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
                       <div className="p-4 relative">
                         <div className="bg-gray-100 rounded-md h-40 flex items-center justify-center mb-3">
