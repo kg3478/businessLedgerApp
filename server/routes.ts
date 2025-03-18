@@ -186,6 +186,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Update an existing transaction
+  app.patch("/api/transactions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid transaction ID" });
+      }
+      
+      // Check if transaction exists
+      const existingTransaction = await storage.getTransaction(id);
+      if (!existingTransaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      // Ensure date is properly converted
+      let transactionData = req.body;
+      if (typeof transactionData.date === 'string') {
+        transactionData = {
+          ...transactionData,
+          date: new Date(transactionData.date)
+        };
+      }
+      
+      // Update the transaction
+      const updatedTransaction = await storage.updateTransaction(id, transactionData);
+      
+      // Create activity log
+      const username = req.user?.username || "system";
+      await storage.createActivity({
+        performedBy: username,
+        description: "Updated transaction",
+        entityType: "TRANSACTION",
+        entityId: id,
+        entityName: `Transaction for ${updatedTransaction?.partyName}`,
+        details: `Transaction ${id} updated by ${username}`,
+        timestamp: new Date()
+      });
+      
+      res.json(updatedTransaction);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
+      }
+      console.error("Error updating transaction:", error);
+      res.status(500).json({ message: "Failed to update transaction" });
+    }
+  });
+  
   // BILL ROUTES
   
   // Get all bills
