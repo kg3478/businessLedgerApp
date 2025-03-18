@@ -1,0 +1,32 @@
+[
+  {
+    "performedBy": "system",
+    "description": "Created credit entry",
+    "entityType": "TRANSACTION",
+    "entityId": 1,
+    "entityName": "CREDIT for Acme Corporation",
+    "details": "Created credit entry of ₹50000 for Acme Corporation",
+    "timestamp": "2025-03-18T23:19:17.972Z",
+    "id": 1
+  },
+  {
+    "performedBy": "system",
+    "description": "Created credit entry",
+    "entityType": "TRANSACTION",
+    "entityId": 2,
+    "entityName": "CREDIT for Acme Corporation",
+    "details": "Created credit entry of ₹40000 for Acme Corporation",
+    "timestamp": "2025-03-18T23:22:44.263Z",
+    "id": 2
+  },
+  {
+    "performedBy": "system",
+    "description": "Uploaded bill",
+    "entityType": "BILL",
+    "entityId": 1,
+    "entityName": "Bill for Acme Corporation",
+    "details": "Uploaded bill: UCS415_MST_23 (1).pdf for Acme Corporation",
+    "timestamp": "2025-03-18T23:23:18.629Z",
+    "id": 3
+  }
+]

@@ -1,48 +1,61 @@
-import { users, parties, transactions, bills, activities, type User, type InsertUser, type Party, type Transaction, type Bill, type Activity } from "@shared/schema";
+// server/fileStorage.ts
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { 
+  users, parties, transactions, bills, activities, 
+  type User, type InsertUser, type Party, type Transaction, 
+  type Bill, type Activity 
+} from "@shared/schema";
+import { IStorage } from './storage';
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
-export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
-  // Party operations
-  getParties(): Promise<Party[]>;
-  getParty(id: number): Promise<Party | undefined>;
-  createParty(party: Omit<Party, "id" | "balance" | "lastActivityDate" | "createdAt" | "updatedAt">): Promise<Party>;
-  updateParty(id: number, party: Partial<Party>): Promise<Party | undefined>;
-  updatePartyBalance(id: number, amount: number, isCredit: boolean): Promise<Party | undefined>;
-  updatePartyLastActivity(id: number): Promise<void>;
-  
-  // Transaction operations
-  getTransactions(): Promise<Transaction[]>;
-  getTransactionsByParty(partyId: number): Promise<Transaction[]>;
-  getRecentTransactions(limit?: number): Promise<Transaction[]>;
-  getCreditTransactionsWithoutBill(): Promise<Transaction[]>;
-  getTransaction(id: number): Promise<Transaction | undefined>;
-  createTransaction(transaction: Omit<Transaction, "id" | "billId" | "createdAt" | "updatedAt">): Promise<Transaction>;
-  updateTransaction(id: number, transaction: Partial<Transaction>): Promise<Transaction | undefined>;
-  
-  // Bill operations
-  getBills(): Promise<Bill[]>;
-  getBillsByParty(partyId: number): Promise<Bill[]>;
-  getBill(id: number): Promise<Bill | undefined>;
-  createBill(bill: Omit<Bill, "id" | "createdAt">): Promise<Bill>;
-  linkBillToTransaction(billId: number, transactionId: number): Promise<void>;
-  
-  // Activity operations
-  getActivities(): Promise<Activity[]>;
-  createActivity(activity: Omit<Activity, "id">): Promise<Activity>;
-  
-  // Session storage
-  sessionStore: session.SessionStore;
+// Set up directory paths for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const DATA_DIR = path.join(__dirname, 'data');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-export class MemStorage implements IStorage {
+// File paths
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const PARTIES_FILE = path.join(DATA_DIR, 'parties.json');
+const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
+const BILLS_FILE = path.join(DATA_DIR, 'bills.json');
+const ACTIVITIES_FILE = path.join(DATA_DIR, 'activities.json');
+const COUNTERS_FILE = path.join(DATA_DIR, 'counters.json');
+
+// Helper functions
+function readJsonFile<T>(filePath: string, defaultValue: T): T {
+  if (!fs.existsSync(filePath)) {
+    return defaultValue;
+  }
+  
+  try {
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data) as T;
+  } catch (error) {
+    console.error(`Error reading ${filePath}:`, error);
+    return defaultValue;
+  }
+}
+
+function writeJsonFile<T>(filePath: string, data: T): void {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    console.error(`Error writing to ${filePath}:`, error);
+  }
+}
+
+export class FileStorage implements IStorage {
   private users: Map<number, User>;
   private parties: Map<number, Party>;
   private transactions: Map<number, Transaction>;
@@ -58,23 +71,121 @@ export class MemStorage implements IStorage {
   private activityCounter: number;
 
   constructor() {
-    this.users = new Map();
-    this.parties = new Map();
-    this.transactions = new Map();
-    this.bills = new Map();
-    this.activities = new Map();
-    
-    this.userCounter = 1;
-    this.partyCounter = 1;
-    this.transactionCounter = 1;
-    this.billCounter = 1;
-    this.activityCounter = 1;
-    
+    // Initialize sessionStore
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
+    
+    // Load or initialize counters
+    const counters = readJsonFile(COUNTERS_FILE, {
+      userCounter: 1,
+      partyCounter: 1,
+      transactionCounter: 1,
+      billCounter: 1,
+      activityCounter: 1
+    });
+    
+    this.userCounter = counters.userCounter;
+    this.partyCounter = counters.partyCounter;
+    this.transactionCounter = counters.transactionCounter;
+    this.billCounter = counters.billCounter;
+    this.activityCounter = counters.activityCounter;
+    
+    // Load data from files or initialize with empty arrays
+    const usersArray = readJsonFile<User[]>(USERS_FILE, []);
+    const partiesArray = readJsonFile<Party[]>(PARTIES_FILE, []);
+    const transactionsArray = readJsonFile<Transaction[]>(TRANSACTIONS_FILE, []);
+    const billsArray = readJsonFile<Bill[]>(BILLS_FILE, []);
+    const activitiesArray = readJsonFile<Activity[]>(ACTIVITIES_FILE, []);
+    
+    // Convert arrays to maps
+    this.users = new Map(usersArray.map(u => [u.id, u]));
+    this.parties = new Map(partiesArray.map(p => [p.id, p]));
+    this.transactions = new Map(transactionsArray.map(t => [t.id, t]));
+    this.bills = new Map(billsArray.map(b => [b.id, b]));
+    this.activities = new Map(activitiesArray.map(a => [a.id, a]));
+    
+    // If there's no data, initialize with sample data (optional)
+    if (this.parties.size === 0) {
+      this.initializeSampleData();
+    }
   }
-
+  
+  // Save counters to persist the next ID values
+  private saveCounters(): void {
+    writeJsonFile(COUNTERS_FILE, {
+      userCounter: this.userCounter,
+      partyCounter: this.partyCounter,
+      transactionCounter: this.transactionCounter,
+      billCounter: this.billCounter,
+      activityCounter: this.activityCounter
+    });
+  }
+  
+  // Save data to files
+  private saveUsers(): void {
+    writeJsonFile(USERS_FILE, Array.from(this.users.values()));
+  }
+  
+  private saveParties(): void {
+    writeJsonFile(PARTIES_FILE, Array.from(this.parties.values()));
+  }
+  
+  private saveTransactions(): void {
+    writeJsonFile(TRANSACTIONS_FILE, Array.from(this.transactions.values()));
+  }
+  
+  private saveBills(): void {
+    writeJsonFile(BILLS_FILE, Array.from(this.bills.values()));
+  }
+  
+  private saveActivities(): void {
+    writeJsonFile(ACTIVITIES_FILE, Array.from(this.activities.values()));
+  }
+  
+  // Optional: Initialize with sample data
+  private initializeSampleData(): void {
+    // Sample parties
+    const sampleParties = [
+      {
+        id: 1,
+        name: "Acme Corporation",
+        address: "123 Business Ave, Commerce City, 90210",
+        contactPerson: "John Smith",
+        phone: "555-123-4567",
+        email: "john.smith@acme.com",
+        balance: 0,
+        lastActivityDate: undefined,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 2,
+        name: "TechSolutions Inc.",
+        address: "456 Innovation Drive, Tech Valley, 94301",
+        contactPerson: "Sarah Jones",
+        phone: "555-987-6543",
+        email: "sarah.jones@techsolutions.com",
+        balance: 0,
+        lastActivityDate: undefined,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    // Add sample parties to the map
+    sampleParties.forEach(party => {
+      this.parties.set(party.id, party);
+    });
+    
+    // Update counter
+    this.partyCounter = 3;
+    
+    // Save to files
+    this.saveParties();
+    this.saveCounters();
+  }
+  
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
@@ -90,6 +201,8 @@ export class MemStorage implements IStorage {
     const id = this.userCounter++;
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
+    this.saveUsers();
+    this.saveCounters();
     return user;
   }
 
@@ -117,7 +230,7 @@ export class MemStorage implements IStorage {
     
     // Log activity
     await this.createActivity({
-      performedBy: "system", // This should be updated to use the current user when available
+      performedBy: "system",
       description: "Created new party",
       entityType: "PARTY",
       entityId: id,
@@ -126,6 +239,8 @@ export class MemStorage implements IStorage {
       timestamp: now
     });
     
+    this.saveParties();
+    this.saveCounters();
     return party;
   }
 
@@ -151,6 +266,7 @@ export class MemStorage implements IStorage {
       timestamp: new Date()
     });
     
+    this.saveParties();
     return updatedParty;
   }
 
@@ -158,8 +274,6 @@ export class MemStorage implements IStorage {
     const party = this.parties.get(id);
     if (!party) return undefined;
     
-    // For credit entries, add to balance (increasing debt)
-    // For deposits, subtract from balance (decreasing debt)
     const newBalance = isCredit 
       ? party.balance + amount 
       : party.balance - amount;
@@ -172,6 +286,7 @@ export class MemStorage implements IStorage {
     };
     
     this.parties.set(id, updatedParty);
+    this.saveParties();
     return updatedParty;
   }
 
@@ -186,13 +301,13 @@ export class MemStorage implements IStorage {
     };
     
     this.parties.set(id, updatedParty);
+    this.saveParties();
   }
 
   // Transaction operations
   async getTransactions(): Promise<Transaction[]> {
     const transactions = Array.from(this.transactions.values());
     
-    // Add party name to each transaction for convenience
     return Promise.all(transactions.map(async (transaction) => {
       const party = await this.getParty(transaction.partyId);
       return {
@@ -219,7 +334,6 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, limit);
     
-    // Add party name to each transaction
     return Promise.all(transactions.map(async (transaction) => {
       const party = await this.getParty(transaction.partyId);
       return {
@@ -233,7 +347,6 @@ export class MemStorage implements IStorage {
     const transactions = Array.from(this.transactions.values())
       .filter(transaction => transaction.type === "CREDIT" && !transaction.billId);
     
-    // Add party name to each transaction
     return Promise.all(transactions.map(async (transaction) => {
       const party = await this.getParty(transaction.partyId);
       return {
@@ -287,6 +400,9 @@ export class MemStorage implements IStorage {
       timestamp: now
     });
     
+    this.saveTransactions();
+    this.saveCounters();
+    
     return {
       ...transaction,
       partyName: party?.name
@@ -304,6 +420,7 @@ export class MemStorage implements IStorage {
     };
     
     this.transactions.set(id, updatedTransaction);
+    this.saveTransactions();
     
     // Log activity
     const party = await this.getParty(updatedTransaction.partyId);
@@ -404,6 +521,8 @@ export class MemStorage implements IStorage {
       timestamp: now
     });
     
+    this.saveBills();
+    this.saveCounters();
     return bill;
   }
 
@@ -430,6 +549,9 @@ export class MemStorage implements IStorage {
     };
     
     this.bills.set(billId, updatedBill);
+    
+    this.saveBills();
+    this.saveTransactions();
   }
 
   // Activity operations
@@ -447,10 +569,8 @@ export class MemStorage implements IStorage {
     };
     
     this.activities.set(id, activity);
+    this.saveActivities();
+    this.saveCounters();
     return activity;
   }
 }
-
-// export const storage = new MemStorage();
-import { FileStorage } from './fileStorage';
-export const storage = new FileStorage();

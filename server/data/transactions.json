@@ -1,0 +1,24 @@
+[
+  {
+    "partyId": 1,
+    "type": "CREDIT",
+    "amount": 50000,
+    "date": "2025-03-18T23:19:09.100Z",
+    "reference": "",
+    "notes": "",
+    "id": 1,
+    "createdAt": "2025-03-18T23:19:17.972Z",
+    "updatedAt": "2025-03-18T23:19:17.972Z"
+  },
+  {
+    "partyId": 1,
+    "type": "CREDIT",
+    "amount": 40000,
+    "date": "2025-03-18T23:22:24.475Z",
+    "reference": "dnefwklj3232",
+    "notes": "",
+    "id": 2,
+    "createdAt": "2025-03-18T23:22:44.263Z",
+    "updatedAt": "2025-03-18T23:22:44.263Z"
+  }
+]

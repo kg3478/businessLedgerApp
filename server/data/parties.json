@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "name": "Acme Corporation",
+    "address": "123 Business Ave, Commerce City, 90210",
+    "contactPerson": "John Smith",
+    "phone": "555-123-4567",
+    "email": "john.smith@acme.com",
+    "balance": 90000,
+    "lastActivityDate": "2025-03-18T23:22:44.263Z",
+    "createdAt": "2025-03-18T23:18:28.000Z",
+    "updatedAt": "2025-03-18T23:22:44.263Z"
+  },
+  {
+    "id": 2,
+    "name": "TechSolutions Inc.",
+    "address": "456 Innovation Drive, Tech Valley, 94301",
+    "contactPerson": "Sarah Jones",
+    "phone": "555-987-6543",
+    "email": "sarah.jones@techsolutions.com",
+    "balance": 0,
+    "createdAt": "2025-03-18T23:18:28.000Z",
+    "updatedAt": "2025-03-18T23:18:28.000Z"
+  }
+]
