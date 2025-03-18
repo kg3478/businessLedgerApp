@@ -54,12 +54,26 @@ export default function PartyDetailsPage() {
   });
 
   const { data: transactions, isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions", partyId],
+    queryKey: ["/api/transactions"],
+    queryFn: async () => {
+      const res = await fetch(`/api/transactions?partyId=${partyId}`, {
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to fetch transactions");
+      return res.json();
+    },
     enabled: !!partyId,
   });
 
   const { data: bills, isLoading: isLoadingBills } = useQuery<Bill[]>({
     queryKey: ["/api/bills", partyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/bills/${partyId}`, {
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to fetch bills");
+      return res.json();
+    },
     enabled: !!partyId,
   });
 
@@ -218,7 +232,7 @@ export default function PartyDetailsPage() {
               <Separator className="my-2" />
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-1">GSTIN</h4>
                   <p className="text-lg font-medium">{party?.gstin || "Not provided"}</p>
@@ -227,14 +241,6 @@ export default function PartyDetailsPage() {
                   <h4 className="text-sm font-medium text-gray-500 mb-1">Outstanding Balance</h4>
                   <p className={`text-lg font-bold ${party?.balance && party.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                     ₹{party?.balance?.toFixed(2) || "0.00"}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-1">Last Activity</h4>
-                  <p className="text-lg font-medium">
-                    {party?.lastActivityDate
-                      ? new Date(party.lastActivityDate).toLocaleDateString()
-                      : "No activity recorded"}
                   </p>
                 </div>
               </div>

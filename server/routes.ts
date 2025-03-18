@@ -108,6 +108,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all transactions
   app.get("/api/transactions", isAuthenticated, async (req, res) => {
     try {
+      // If partyId is provided in query params, get transactions for that party
+      if (req.query.partyId) {
+        const partyId = parseInt(req.query.partyId as string);
+        if (isNaN(partyId)) {
+          return res.status(400).json({ message: "Invalid party ID" });
+        }
+        const transactions = await storage.getTransactionsByParty(partyId);
+        return res.json(transactions);
+      }
+      
+      // Otherwise get all transactions
       const transactions = await storage.getTransactions();
       res.json(transactions);
     } catch (error) {
